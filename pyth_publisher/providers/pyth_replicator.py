@@ -7,7 +7,7 @@ import time
 
 from structlog import get_logger
 
-from example_publisher.provider import Price, Provider, Symbol
+from pyth_publisher.provider import Price, Provider, Symbol
 
 from ..config import PythReplicatorConfig
 
@@ -97,9 +97,7 @@ class PythReplicator(Provider):
                         agg_price, agg_confidence_interval = manual_aggregate(prices)
 
                         self._prices[symbol] = Price(
-                            agg_price,
-                            agg_confidence_interval,
-                            update.timestamp,
+                            agg_price, agg_confidence_interval, update.timestamp
                         )
 
                 log.info(

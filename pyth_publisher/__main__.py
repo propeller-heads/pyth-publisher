@@ -3,15 +3,13 @@ import os
 import sys
 import threading
 import uvicorn
-from example_publisher.config import Config
-from example_publisher.publisher import Publisher
-import typed_settings as ts
+
+from pyth_publisher.config import config
+from pyth_publisher.publisher import Publisher
 import click
 import logging
 import structlog
-from example_publisher.api.health_check import app, API
-
-_DEFAULT_CONFIG_PATH = os.path.join("config", "config.toml")
+from pyth_publisher.api.health_check import app, API
 
 
 log_level = logging._nameToLevel[os.environ.get("LOG_LEVEL", "DEBUG").upper()]
@@ -21,20 +19,7 @@ log = structlog.get_logger()
 
 
 @click.command()
-@click.option(
-    "--config",
-    "config_path",
-    default=_DEFAULT_CONFIG_PATH,
-    help="Location of config file.",
-)
-def main(config_path):
-
-    config: Config = ts.load(
-        cls=Config,
-        appname="publisher",
-        config_files=[config_path],
-    )
-
+def main():
     publisher = Publisher(config=config)
     API.publisher = publisher
 
