@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from pycoingecko import CoinGeckoAPI
 from structlog import get_logger
 
-from pyth_publisher.provider import Price, Provider, Symbol
+from pyth_publisher.provider import Price, Provider, PythSymbol
 from ..config import CoinGeckoConfig
 
 log = get_logger()
@@ -19,12 +19,12 @@ class CoinGecko(Provider):
     def __init__(self, config: CoinGeckoConfig) -> None:
         self._api: CoinGeckoAPI = CoinGeckoAPI()
         self._prices: Dict[Id, Price] = {}
-        self._symbol_to_id: Dict[Symbol, Id] = {
+        self._symbol_to_id: Dict[PythSymbol, Id] = {
             product.symbol: product.coin_gecko_id for product in config.products
         }
         self._config = config
 
-    def upd_products(self, product_symbols: List[Symbol]) -> None:
+    def upd_products(self, product_symbols: List[PythSymbol]) -> None:
         new_prices = {}
         for coin_gecko_product in self._config.products:
             if coin_gecko_product.symbol in product_symbols:
@@ -58,7 +58,7 @@ class CoinGecko(Provider):
     def _get_price(self, id: Id) -> Optional[Price]:
         return self._prices.get(id, None)
 
-    def latest_price(self, symbol: Symbol) -> Optional[Price]:
+    def latest_price(self, symbol: PythSymbol) -> Optional[Price]:
         id = self._symbol_to_id.get(symbol)
         if id is None:
             return None
