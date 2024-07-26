@@ -16,7 +16,7 @@ An example configuration file can be found in [`config/config.toml`](config/conf
 ## Dev environment
 
 - Create the dev environment `conda env create -f requirements/environment_dev.yaml`
-- Activate it with `conda activate pyth-dev`
+- Activate it with `conda activate pyth`
 - Install dependencies with `pip install -r requirements/requirements.txt` 
 
 ## Run
