@@ -46,6 +46,11 @@ class PythReplicatorConfig:
 
 
 @ts.settings
+class PropellerConfig:
+    update_interval_secs: int = ts.option(default=60)
+
+
+@ts.settings
 class Config:
     provider_engine: str
     pythd: Pythd
