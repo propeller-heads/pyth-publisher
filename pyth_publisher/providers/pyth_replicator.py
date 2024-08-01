@@ -28,7 +28,7 @@ class PythReplicator(Provider):
             program_key=config.program_key,
         )
         self._prices: Dict[str, Optional[Price]] = {}
-        self._update_accounts_task: asyncio.Task | None = None
+        self._update_accounts_task: Optional[asyncio.Task] = None
 
     async def _update_loop(self) -> None:
         self._ws = self._client.create_watch_session()

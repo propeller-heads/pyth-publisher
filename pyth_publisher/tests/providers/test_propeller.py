@@ -139,29 +139,49 @@ async def test_update_prices():
     quote_amount = int(1e18)
     USDC = EthereumToken(
         symbol="USDC",
-        address="0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        address="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         decimals=6,
         gas=29000,
     )
     WBTC = EthereumToken(
-        symbol="WBTC", address="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals=8
+        symbol="WBTC", address="0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", decimals=8
     )
-    usdc_price = 3400 * 10**6
-    usdc_spread = (100 * 10**6,)
 
-    wbtc_price = 5_600_000
-    wbtc_spread = int(0.001 * 10**8)
+    # We store in redis how much USDC is required to buy 1 ETH
+    # However, the redis gateway inverses this to give us how much ETH is required to
+    # buy 1 USDC (considering the off-chain values).
+    usdc_price = Decimal(1 / 3400)
+    usdc_spread = Decimal(100)  # In USDC
+
+    # How much ETH is required to buy 1 BTC
+    wbtc_price = Decimal(20)
+    wbtc_spread = Decimal(0.001)  # In BTC (around 65 USDC)
 
     mock_redis_gtw = MagicMock()
-    # TODO: I have no idea why only the USDC price is being returned
     mock_redis_gtw.get_token_prices = AsyncMock(
         return_value={USDC: usdc_price, WBTC: wbtc_price}
     )
     mock_redis_gtw.get_token_spreads = AsyncMock(
         return_value={USDC: usdc_spread, WBTC: wbtc_spread}
     )
+
+    # Quote token is USDC by default
     provider = Propeller(PropellerConfig(), quote_amount=quote_amount)
     provider._supported_products = {"USDC", "WBTC"}
     provider._redis_gtw = mock_redis_gtw
 
     await provider._update_prices()
+
+    updated_usdc_price = provider._prices.get(USDC.address)
+    assert (updated_usdc_price.price, updated_usdc_price.conf) == (
+        1.0,
+        # This spread is because we are going through ETH and back to USDC
+        0.11774891774891774,
+    )
+
+    # WBTC price in USDC
+    updated_wbtc_price = provider._prices.get(WBTC.address)
+    assert (updated_wbtc_price.price, updated_wbtc_price.conf) == (
+        68000.0,
+        6722.689075630253,
+    )
