@@ -33,7 +33,6 @@ class Propeller(Provider):
     ) -> None:
         self._prices: dict[Address, Price] = {}
         self._config = config
-        # TODO: update token info every hour?
         self._token_symbol_to_address: dict[Symbol, Address] = (
             token_symbol_to_address
             if token_symbol_to_address
