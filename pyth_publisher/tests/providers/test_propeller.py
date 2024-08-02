@@ -1,3 +1,5 @@
+import asyncio
+import math
 from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, AsyncMock
@@ -138,6 +140,27 @@ def test_compute_spread_non_stable_token_pair():
         quote_token_spread_relative_to_eth=usdc_spread_relative_to_eth,
     )
     assert round(spread, 2) == Decimal("5486.44")
+
+
+@pytest.mark.skip(reason="Requires internet connection.")
+@pytest.mark.asyncio
+async def test_integration():
+    """To run this, port-forward Redis, and replace PASSWORD with our redis
+    password."""
+    provider = Propeller(
+        PropellerConfig(),
+        # Setting this to None ensures that it's retrieves from s3
+        token_symbol_to_address=None,
+        redis_gtw=RedisPricesGateway(
+            redis_gw=RedisTokenPricesGW(uri="redis://:PASSWORD@localhost:6379")
+        ),
+    )
+    provider._supported_products = {"DAI"}
+    provider.start()
+    await asyncio.sleep(10)
+    latest_price = provider.latest_price(symbol="Crypto.DAI/USD")
+    # Assert that the DAI price is no more than 0.1 away from 1
+    assert math.isclose(latest_price.price, 1, rel_tol=0.1)
 
 
 @pytest.mark.asyncio

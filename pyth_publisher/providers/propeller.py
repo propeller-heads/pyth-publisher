@@ -30,6 +30,7 @@ class Propeller(Provider):
         config: PropellerConfig,
         token_symbol_to_address: Optional[dict[Symbol, Address]] = None,
         quote_amount: Optional[int] = None,
+        redis_gtw: Optional[RedisPricesGateway] = None,
     ) -> None:
         self._prices: dict[Address, Price] = {}
         self._config = config
@@ -39,7 +40,7 @@ class Propeller(Provider):
             else self._get_token_info()
         )
         self._supported_products: set[Symbol] = set()
-        self._redis_gtw = RedisPricesGateway()
+        self._redis_gtw = redis_gtw or RedisPricesGateway()
         self._quote_amount = quote_amount
         self._quote_token = EthereumToken(
             symbol="USDC",
