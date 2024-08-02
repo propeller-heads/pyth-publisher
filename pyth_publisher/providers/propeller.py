@@ -5,6 +5,8 @@ from decimal import Decimal
 from math import floor
 from typing import Dict, List, Optional
 
+from drfs import DRPath
+import pandas as pd
 from core.models.evm.ethereum_token import EthereumToken
 from storage.token_prices import RedisPricesGateway
 
@@ -31,11 +33,11 @@ class Propeller(Provider):
     ) -> None:
         self._prices: dict[Address, Price] = {}
         self._config = config
-        # TODO: update tokens info every hour?
+        # TODO: update token info every hour?
         self._token_symbol_to_address: dict[Symbol, Address] = (
             token_symbol_to_address
             if token_symbol_to_address
-            else self._get_tokens_info()
+            else self._get_token_info()
         )
         self._supported_products: set[Symbol] = set()
         self._redis_gtw = RedisPricesGateway()
@@ -96,9 +98,17 @@ class Propeller(Provider):
             return None
         return self._prices.get(address)
 
-    def _get_tokens_info(self) -> dict[Symbol, str]:
-        # TODO: call https://api.bots.multiplier.fi/swaps/tokens/?blockchain=ethereum&page=0&limit=20 to get all tokens and make a dict
-        pass
+    @staticmethod
+    def _get_token_info() -> dict[Symbol, str]:
+        """Get a mapping of supported token symbols to addresses from s3."""
+        supported_tokens_path = DRPath(
+            "s3://defibot-data/price-oracle-evaluation/symbols_to_address.csv"
+        )
+        supported_tokens_df = pd.read_csv(supported_tokens_path)
+        supported_tokens_dict = supported_tokens_df.set_index("symbol")[
+            "address"
+        ].to_dict()
+        return supported_tokens_dict
 
     @staticmethod
     def _compute_spread(

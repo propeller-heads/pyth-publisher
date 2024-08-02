@@ -44,6 +44,12 @@ def test_upd_products(pyth_products):
     assert provider._supported_products == {"USDC", "DAI", "USDT"}
 
 
+def test_get_token_info():
+    provider = Propeller(PropellerConfig(), token_symbol_to_address={})
+    token_info = provider._get_token_info()
+    assert len(token_info) > 100
+
+
 def test_compute_spread_stable_token_pair():
     # copied from defibot
     """Calculate the Spread for DAI (base token) -> USDC (quote token)
