@@ -7,7 +7,7 @@ import time
 
 from structlog import get_logger
 
-from pyth_publisher.provider import Price, Provider, Symbol
+from pyth_publisher.provider import Price, Provider, PythSymbol
 
 from ..config import PythReplicatorConfig
 
@@ -28,7 +28,7 @@ class PythReplicator(Provider):
             program_key=config.program_key,
         )
         self._prices: Dict[str, Optional[Price]] = {}
-        self._update_accounts_task: asyncio.Task | None = None
+        self._update_accounts_task: Optional[asyncio.Task] = None
 
     async def _update_loop(self) -> None:
         self._ws = self._client.create_watch_session()
@@ -124,7 +124,7 @@ class PythReplicator(Provider):
         # but this filtering happens in the client-side and not on the server-side.
         pass
 
-    def latest_price(self, symbol: Symbol) -> Optional[Price]:
+    def latest_price(self, symbol: PythSymbol) -> Optional[Price]:
         price = self._prices.get(symbol, None)
 
         if not price:
