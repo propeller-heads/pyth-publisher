@@ -27,7 +27,7 @@ class Product:
 class Publisher:
     def __init__(self, config: Config) -> None:
         self.config: Config = config
-        self._product_update_task: asyncio.Task | None = None
+        self._product_update_task: Optional[asyncio.Task] = None
 
         if not getattr(self.config, self.config.provider_engine):
             raise ValueError(f"Missing {self.config.provider_engine} config")
@@ -154,14 +154,15 @@ class Publisher:
             conf=scaled_conf,
             symbol=product.symbol,
         )
-        await self.pythd.update_price(
-            product.price_account, scaled_price, scaled_conf, TRADING
-        )
+        # await self.pythd.update_price(
+        #     product.price_account, scaled_price, scaled_conf, TRADING
+        # )
         self.last_successful_update = (
             price.timestamp
             if self.last_successful_update is None
             else max(self.last_successful_update, price.timestamp)
         )
 
-    def apply_exponent(self, x: float, exp: int) -> int:
+    @staticmethod
+    def apply_exponent(x: float, exp: int) -> int:
         return int(x * (10 ** (-exp)))
