@@ -205,12 +205,12 @@ async def test_update_prices():
     assert (updated_usdc_price.price, updated_usdc_price.conf) == (
         1.0,
         # This spread is because we are going through ETH and back to USDC
-        0.11774891774891774,
+        0.05887445887445887,
     )
 
     # WBTC price in USDC
     updated_wbtc_price = provider._prices.get(WBTC.address)
     assert (updated_wbtc_price.price, updated_wbtc_price.conf) == (
         68000.0,
-        6722.689075630253,
+        3361.3445378151264,
     )

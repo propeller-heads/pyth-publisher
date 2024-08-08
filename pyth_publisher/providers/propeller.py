@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from decimal import Decimal
 from math import floor
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from drfs import DRPath
 import pandas as pd
@@ -87,7 +87,9 @@ class Propeller(Provider):
                     quote_token_spread_relative_to_eth,
                 )
                 self._prices[token.address] = Price(
-                    float(price), float(spread), floor(datetime.utcnow().timestamp())
+                    float(price),
+                    float(spread) / 2,  # the confidence interval is half of the spread
+                    floor(datetime.utcnow().timestamp()),
                 )
         log.info(f"Updated prices from Redis: {self._prices}")
 

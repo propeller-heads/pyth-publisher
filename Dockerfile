@@ -1,95 +1,63 @@
-# Reference: https://bmaingret.github.io/blog/2021-11-15-Docker-and-Poetry#multi-stage-build
-
-ARG APP_NAME=example-publisher
-ARG APP_PACKAGE=example_publisher
+ARG GH_TOKEN
+ARG APP_NAME=pyth-publisher
+ARG APP_PACKAGE=pyth_publisher
 ARG APP_PATH=/opt/$APP_NAME
-ARG PYTHON_VERSION=3.10.4
-ARG POETRY_VERSION=1.2.2
-
+ARG PYTHON_VERSION=3.9
 #
 # Stage: base
 #
 
-FROM python:$PYTHON_VERSION as base
+FROM continuumio/miniconda3 as base
 
+ARG GH_TOKEN
 ARG APP_NAME
+ARG APP_PACKAGE
 ARG APP_PATH
-ARG POETRY_VERSION
+ARG PYTHON_VERSION
 
 ENV \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1
-ENV \
-    POETRY_VERSION=$POETRY_VERSION \
-    POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1
 
-# Install Poetry - respects $POETRY_VERSION & $POETRY_HOME
-RUN curl -sSL https://install.python-poetry.org | python
-ENV PATH="$POETRY_HOME/bin:$PATH"
-
+# Create the working directory
 WORKDIR $APP_PATH
-COPY . .
 
-#
-# Stage: development
-#
+# Set up Git authentication
+RUN git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
 
-FROM base as development
+# Copy environment specification
+COPY requirements/requirements.txt .
 
-ARG APP_NAME
-ARG APP_PATH
+# Install GCC
+RUN apt-get update
+RUN apt-get install -y g++
 
-WORKDIR $APP_PATH
-RUN poetry install
+# Create conda environment and install dependencies
+RUN conda create --name $APP_NAME python=$PYTHON_VERSION && \
+    conda run -n $APP_NAME pip install -r requirements.txt && \
+    conda clean -a
 
-ENV APP_NAME=$APP_NAME
-
-ENTRYPOINT ["poetry", "run"]
-CMD ["$APP_NAME"]
-
-#
-# Stage: build
-#
-
-FROM base as build
-
-ARG APP_NAME
-ARG APP_PATH
-
-WORKDIR $APP_PATH
-RUN poetry build --format wheel
-RUN poetry export --format requirements.txt --output constraints.txt --without-hashes
+# Set conda environment
+ENV PATH /opt/conda/envs/$APP_NAME/bin:$PATH
+ENV CONDA_DEFAULT_ENV=$APP_NAME
 
 #
 # Stage: production
 #
 
-FROM python:$PYTHON_VERSION as production
+FROM base as production
 
 ARG APP_NAME
 ARG APP_PATH
 
-ENV \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONFAULTHANDLER=1
-
-ENV \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100
-
-# Get build artifact wheel and install it respecting dependency versions
 WORKDIR $APP_PATH
-COPY --from=build $APP_PATH/dist/*.whl ./
-COPY --from=build $APP_PATH/constraints.txt ./
-RUN pip install ./*.whl --requirement constraints.txt
 
-COPY ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Copy the application code
+COPY . .
 
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["$APP_NAME"]
+# Ensure conda environment is activated
+ENV PATH /opt/conda/envs/$APP_NAME/bin:$PATH
+ENV CONDA_DEFAULT_ENV=$APP_NAME
+
+CMD ["python", "-m", "pyth_publisher"]

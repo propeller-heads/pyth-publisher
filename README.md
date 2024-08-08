@@ -27,3 +27,16 @@ python pyth_publisher
 ```
 
 The config used is at `config/config.yaml`.
+
+## Docker image
+
+To create the docker image you need to set the following environment variable:
+```bash
+export GH_TOKEN=<your-token>
+```
+You can get your token [here](https://github.com/settings/tokens)
+
+Then you can build the image:
+```bash
+docker build --build-arg GH_TOKEN=$GH_TOKEN .                         
+```
