@@ -20,6 +20,7 @@ log = getLogger()
 USD = "usd"
 
 PYTH_SYMBOL_REGEX = r"Crypto\.(\w+)/USD"
+LATEST_RETRIEVED_PRICES: Dict[str, Price] = {}
 
 Address = str
 
@@ -94,11 +95,21 @@ class Propeller(Provider):
         log.info(f"Updated prices from Redis: {self._prices}")
 
     def latest_price(self, symbol: PythSymbol) -> Optional[Price]:
+        """Return the latest price for the given symbol.
+
+        Returns None of the symbol is not supported, or if the latest price has
+        already been reported."""
         symbol = self._get_token_symbol_from_pyth_symbol(symbol)
         address = self._token_symbol_to_address.get(symbol)
         if address is None:
             return None
-        return self._prices.get(address)
+
+        latest_price = self._prices.get(address)
+        if LATEST_RETRIEVED_PRICES.get(symbol) == latest_price:
+            return None
+
+        LATEST_RETRIEVED_PRICES[symbol] = latest_price
+        return latest_price
 
     @staticmethod
     def _get_token_info() -> dict[Symbol, str]:

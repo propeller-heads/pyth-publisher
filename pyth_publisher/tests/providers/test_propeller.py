@@ -214,3 +214,66 @@ async def test_update_prices():
         68000.0,
         3361.3445378151264,
     )
+
+
+@pytest.mark.asyncio
+async def test_latest_price_cache():
+    """Tests our simple price cache logic:
+
+    If called latest_price for the first time for a symbol, we should get that price.
+    If calling again before the price is updated, we should get `None`.
+    If the price is updated and we call again, we should get the new price."""
+    quote_amount = int(1e18)
+    USDC = EthereumToken(
+        symbol="USDC",
+        address="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        decimals=6,
+        gas=29000,
+    )
+    WBTC = EthereumToken(
+        symbol="WBTC", address="0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", decimals=8
+    )
+
+    # We store in redis how much USDC is required to buy 1 ETH
+    # However, the redis gateway inverses this to give us how much ETH is required to
+    # buy 1 USDC (considering the off-chain values).
+    usdc_price = Decimal(1 / 3400)
+    usdc_spread = Decimal(100)  # In USDC
+
+    # How much ETH is required to buy 1 BTC
+    wbtc_price = Decimal(20)
+    wbtc_spread = Decimal(0.001)  # In BTC (around 65 USDC)
+
+    mock_redis_gtw = MagicMock()
+    mock_redis_gtw.get_token_prices = AsyncMock(
+        return_value={USDC: usdc_price, WBTC: wbtc_price}
+    )
+    mock_redis_gtw.get_token_spreads = AsyncMock(
+        return_value={USDC: usdc_spread, WBTC: wbtc_spread}
+    )
+
+    # Quote token is USDC by default
+    provider = Propeller(PropellerConfig(), quote_amount=quote_amount)
+    provider._supported_products = {"USDC", "WBTC"}
+    provider._redis_gtw = mock_redis_gtw
+
+    await provider._update_prices()
+
+    # Cache miss
+    updated_wbtc_price = provider.latest_price(symbol="Crypto.BTC/USD")
+    assert updated_wbtc_price is not None
+
+    # Cache hit
+    updated_wbtc_price = provider.latest_price(symbol="Crypto.BTC/USD")
+    assert updated_wbtc_price is None
+
+    # New WBTC price
+    mock_redis_gtw.get_token_prices = AsyncMock(
+        return_value={USDC: usdc_price, WBTC: Decimal(30)}
+    )
+    provider._redis_gtw = mock_redis_gtw
+    await provider._update_prices()
+
+    # Cache miss
+    updated_wbtc_price = provider.latest_price(symbol="Crypto.BTC/USD")
+    assert updated_wbtc_price is not None
