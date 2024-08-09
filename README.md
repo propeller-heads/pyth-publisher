@@ -38,5 +38,10 @@ You can get your token [here](https://github.com/settings/tokens)
 
 Then you can build the image:
 ```bash
-docker build --build-arg GH_TOKEN=$GH_TOKEN .                         
+docker build --build-arg GH_TOKEN=$GH_TOKEN . -t 827659017777.dkr.ecr.eu-central-1.amazonaws.com/pyth:0.1.0-SNAPSHOT.$(git rev-parse --short HEAD)                      
+```
+
+If you need this image to run in the cluster and your OS is a Linux, you need to run:
+```bash
+docker build --build-arg GH_TOKEN=$GH_TOKEN . -t 827659017777.dkr.ecr.eu-central-1.amazonaws.com/pyth:0.1.0-SNAPSHOT.$(git rev-parse --short HEAD) --platform linux/amd64                   
 ```
